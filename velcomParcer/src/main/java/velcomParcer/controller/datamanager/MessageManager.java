@@ -7,6 +7,6 @@ public class MessageManager {
 	public static final String JSP_ERROR = "Jsp's not found";
 	public static final String WRONG = "Wrong request";
 	public static final String CREATED_CSV = "CSV is created in src/main/resources/csv";
-	public static final String CREATED_XML = "CSV is created in src/main/resources/xml";
+	public static final String CREATED_XML = "XML is created in src/main/resources/xml";
 	
 }

@@ -13,16 +13,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.jsoup.nodes.Document;
-
 import velcomParcer.dao.TenderDAO;
 import velcomParcer.dao.connection.ConnectionPool;
 import velcomParcer.dao.connection.exception.ConnectionPoolException;
 import velcomParcer.dao.exception.DAOException;
 import velcomParcer.entity.Tender;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import org.jdom.JDOMException;
+import org.jdom.input.SAXBuilder;
+import org.jdom.output.XMLOutputter;
 
 public class SQLTenderDAO implements TenderDAO {
 	private static final Logger log = LogManager.getRootLogger();
@@ -31,7 +35,8 @@ public class SQLTenderDAO implements TenderDAO {
 	private ConnectionPool conPool = ConnectionPool.getInstance();
 	private static final String COMMA_DELIMITER = ",";
 	private static final String NEW_LINE_SEPARATOR = "\n";
-	private static final String FILE_PATH = "C:/JD2/Workspace/velcomParcer/src/main/resources/";
+	private static final String FILE_PATH = "C:/Users/Anjeymash/git/LocalWebTenderParser/velcomParcer/src/main/resources/";
+	
 	private Long id;
 
 	@Override
@@ -60,7 +65,6 @@ public class SQLTenderDAO implements TenderDAO {
 		} catch (SQLException e) {
 			log.error("error in SaveTender", e);
 			throw new DAOException("SQL error", e);
-			
 
 		} catch (ConnectionPoolException e) {
 			log.error("error in SaveTender", e);
@@ -74,24 +78,50 @@ public class SQLTenderDAO implements TenderDAO {
 		return id;
 	}
 
-	@SuppressWarnings("resource")
 	@Override
 	public void createXML(Document doc) throws DAOException {
-		BufferedWriter htmlWriter;
+		BufferedWriter htmlWriter = null;
+		String filePath = FILE_PATH + "xml/" + id.toString() + ".html";
+		FileReader frInHtml = null;
+		org.jdom.Document jdomDocument = null;
+		FileWriter fwOutXml = null;
+		BufferedReader brInHtml = null;
+		XMLOutputter outputter = null;
+		BufferedWriter bwOutXml = null;
+		SAXBuilder saxBuilder = new SAXBuilder("org.ccil.cowan.tagsoup.Parser", false);
 		try {
-			String filePath = FILE_PATH + "xml/" + id.toString() + ".xml";
+
 			htmlWriter = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filePath), "UTF-8"));
 			htmlWriter.write(doc.outerHtml());
-			System.out.println("creating " + doc.select("tr.af-created td.afv").text());
+			frInHtml = new FileReader(filePath);
+			brInHtml = new BufferedReader(frInHtml);
+			jdomDocument = saxBuilder.build(brInHtml);
+			outputter = new XMLOutputter();
+			outputter.output(jdomDocument, System.out);
+			fwOutXml = new FileWriter(FILE_PATH + "xml/" + id.toString() + ".xml");
+			bwOutXml = new BufferedWriter(fwOutXml);
+			outputter.output(jdomDocument, bwOutXml);
+
 		} catch (UnsupportedEncodingException | FileNotFoundException e) {
+			log.error("file not found", e);
+			throw new DAOException("file not found", e);
+		} catch (IOException | JDOMException e) {
 			log.error("error in CreateXML", e);
 			throw new DAOException("xml-error", e);
 		}
 
-		catch (IOException e) {
-			log.error("error in CreateXML", e);
-			throw new DAOException("xml-error", e);
-			
+		finally {
+			try {
+				fwOutXml.close();
+				frInHtml.close();
+				htmlWriter.close();
+				brInHtml.close();
+				bwOutXml.close();
+			} catch (IOException e) {
+				log.error("error in closing XML", e);
+				throw new DAOException("xml-error", e);
+			}
+
 		}
 	}
 
